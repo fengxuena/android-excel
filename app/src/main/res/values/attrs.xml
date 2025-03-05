@@ -1,0 +1,9 @@
+<resources>
+    <declare-styleable name="ExcelBrowerView">
+        <attr name="viewMode" format="enum">
+            <enum name="cell_mode" value="0"/>
+            <enum name="Xindicator_mode" value="1"/>
+            <enum name="Yindicator_mode" value="2"/>
+        </attr>
+    </declare-styleable>
+</resources>

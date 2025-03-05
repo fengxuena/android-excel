@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".MainActivity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/open_xlsx"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="142dp"
+        android:layout_marginTop="115dp"
+        android:text="打开xlsx文件" />
+
+
+
+    <Button
+        android:id="@+id/open_sql"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/open_xlsx"
+        android:layout_alignStart="@+id/open_xlsx"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="打开数据库列表" />
+
+    <Button
+        android:id="@+id/load_xlsx_to_sql"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/open_xlsx"
+        android:layout_alignStart="@+id/open_xlsx"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="加载xlsx到数据库" />
+
+    <Button
+        android:id="@+id/dp_sql"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/load_xlsx_to_sql"
+        android:layout_alignStart="@+id/load_xlsx_to_sql"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="重置数据库" />
+
+    <Button
+        android:id="@+id/setting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/dp_sql"
+        android:layout_alignStart="@+id/dp_sql"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="设置" />
+    <Button
+        android:id="@+id/exit_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/setting"
+        android:layout_alignStart="@+id/setting"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="退出" />
+
+    <Button
+        android:id="@+id/test_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/exit_button"
+        android:layout_alignStart="@+id/exit_button"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="测试" />
+
+
+</RelativeLayout>
