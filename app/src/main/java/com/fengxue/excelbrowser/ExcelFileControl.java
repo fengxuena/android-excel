@@ -100,14 +100,15 @@ public class ExcelFileControl {
 		LinkedList<LinkedList<Cellitem>> list = new LinkedList<>();
 		if (workbook != null) {
 			Sheet sheet = workbook.getSheetAt(sheetindex);
-			for (int a=1;a<=endrow;a++){
+			for (int a=0;a<=endrow;a++){
 				Row rowdata = sheet.getRow(a);
 				//short cols=rs.getLastCellNum();
 				LinkedList<Cellitem> cellItems = new LinkedList<>();
-				for (int b=1;b<=endcol;b++){
+				for (int b=0
+					 ;b<=endcol;b++){
 					Cell cell=rowdata.getCell(b);
 					Cellitem cellItem;
-					int[] id=new int[]{a,b};
+					int[] id=new int[]{a+1,b+1};
 					String formula="";
 					try {formula=cell.getCellFormula();}catch (Exception e){e.printStackTrace();}
 					cellItem=new Cellitem(id,getCellValue(cell),formula,0,0,false);
@@ -121,14 +122,14 @@ public class ExcelFileControl {
 		LinkedList<Cellitem> list = new LinkedList<>();
 		if (workbook != null && row>=1 &&star_col>=1 && end_col>=1) {
 			Sheet sheet = workbook.getSheetAt(sheetindex);
-			Row rs =sheet.getRow(row);
-			for (int b=star_col;b<=end_col;b++){
+			Row rs =sheet.getRow(row-1);
+			for (int b=star_col-1;b<=end_col-1;b++){
 				Cell cl=rs.getCell(b);
-				int[] id=new int[]{row,cl.getColumnIndex()+1};
+				int[] id=new int[]{row,b+1};
 				String formula="";
 				try {formula=cl.getCellFormula();}catch (Exception e){e.printStackTrace();}
 				Cellitem cellitem=new Cellitem(id,getCellValue(cl),formula,0,0,false);
-				//logs("test","id:R"+cellitem.idlist[0]+"C"+cellitem.idlist[1]+" text"+cellitem.text);
+				logs("test","id:R"+cellitem.idlist[0]+"C"+cellitem.idlist[1]+" text"+cellitem.text);
 				list.add(cellitem);
 			}
 		}
@@ -139,13 +140,13 @@ public class ExcelFileControl {
 		LinkedList<Cellitem> list = new LinkedList<>();
 		if (workbook != null && col>=1 &&star_row>=1 && end_row>=1) {
 			Sheet sheet = workbook.getSheetAt(sheetindex);
-			for (int a=star_row;a<=end_row;a++){
-				Cell cl=sheet.getRow(a).getCell(col);
-				int[] id=new int[]{a,col};
+			for (int a=star_row-1;a<=end_row-1;a++){
+				Cell cl=sheet.getRow(a).getCell(col-1);
+				int[] id=new int[]{a+1,col};
 				String formula="";
 				try {formula=cl.getCellFormula();}catch (Exception e){e.printStackTrace();}
 				Cellitem cellitem=new Cellitem(id,getCellValue(cl),formula,0,0,false);
-				//logs("test","id:R"+cellitem.idlist[0]+"C"+cellitem.idlist[1]+" text"+cellitem.text);
+				logs("test","id:R"+cellitem.idlist[0]+"C"+cellitem.idlist[1]+" text"+cellitem.text);
 				list.add(cellitem);
 			}
 		}

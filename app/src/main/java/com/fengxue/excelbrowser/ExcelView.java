@@ -23,7 +23,7 @@ public class ExcelView extends View {
     public TextPaint TextPaint;
     public Paint LinePaint;
     public int textsize;//字体大小
-    public ExcelView2.TextAlign textAlign;//对齐方式
+    public TextAlign textAlign;//对齐方式
     public Context content;//当前视图对象
     private int cell_starx=180;//数据开始绘制点
     private int cell_stary=70;//数据开始绘制点
@@ -35,14 +35,15 @@ public class ExcelView extends View {
     public Indicator indicator;//行号列号指示器+全选按钮
     private ExcelFileControl dataControl;
     public LinkedList<LinkedList<Cellitem>> Celllist;//数据
-    public int[] DataVisibleRange;
     public float cell_pianyi_x;
     public float cell_pianyi_y;
     public int screen_width;
     public int screen_heigt;
     public boolean first=true;
-    public boolean data_load_lock =true;
     public int sheetindex=0;
+    public int wid=6;
+    public int hei=28;
+    public boolean isscroll=false;
     public enum TextAlign {
         TOP_LEFT, TOP_CENTER, TOP_RIGHT,
         MIDDLE_LEFT, MIDDLE_CENTER, MIDDLE_RIGHT,
@@ -57,7 +58,7 @@ public class ExcelView extends View {
     public void init(){
         //初始化视图和对齐方式,字体大小
         content=getContext();
-        textAlign= ExcelView2.TextAlign.MIDDLE_CENTER;
+        textAlign=TextAlign.MIDDLE_CENTER;
         textsize=18;
         scroller = new Scroller(content);
         screen_width=getWidth();
@@ -77,13 +78,13 @@ public class ExcelView extends View {
     @Override//大小变化
     protected void onSizeChanged(int width, int heigt, int oldwidth, int oldheigt) {
         super.onSizeChanged(width,heigt,oldwidth,oldheigt);
-        cell_starx=width/6;
-        cell_stary=heigt/28;
+        cell_starx=width/wid;
+        cell_stary=heigt/hei;
         screen_width=width;
         screen_heigt=heigt;
         indicator=new Indicator();
         indicator.set_default_size(cell_starx,cell_stary);
-        indicator.set_screen_size();
+        indicator.set_screen_size(wid,hei);
         logs("scren",width+"--"+heigt);
     }
     @Override//绘制
@@ -91,22 +92,21 @@ public class ExcelView extends View {
         //绘制cell
         float pianyi_x=getDecimalAsPercentage(cell_pianyi_x);
         float pianyi_y=getDecimalAsPercentage(cell_pianyi_y);
-        int starx=1;
         int stary=1;
         if (this.Celllist!=null && !this.Celllist.isEmpty() && this.dataControl!=null){
+
             for (LinkedList<Cellitem> list : this.Celllist) {
+                int starx=1;
                 for (Cellitem cell : list) {
-                    Rect rect=new Rect(
-                            cell_starx * starx - (int)(pianyi_x*cell_starx),
-                            cell_stary * stary - (int)(pianyi_y*cell_stary),
-                            cell_starx + cell_starx * starx - (int)(pianyi_x*cell_starx),
-                            cell_stary + cell_stary * stary - (int)(pianyi_y*cell_stary));
-                    //logs("cell","id=R"+cell.idlist[0]+"C"+cell.idlist[1]+" rect=<left "+rect.left+", top "+rect.top+" ,right "+rect.right+" , bottom"+rect.bottom);
+                    Rect rect=new Rect();
+                    rect.left=cell_starx * starx - (int)(pianyi_x*cell_starx);
+                    rect.top=cell_stary * stary - (int)(pianyi_y*cell_stary);
+                    rect.right=cell_starx + cell_starx * starx - (int)(pianyi_x*cell_starx);
+                    rect.bottom=cell_stary + cell_stary * stary - (int)(pianyi_y*cell_stary);
                     drawbackground(canvas, cell, rect);
                     drawGridLines(canvas, rect,LinePaint);
                     if (cell.text != null && !cell.text.isEmpty()) {drawText(canvas, cell, rect);}
                     starx+=1;}
-                starx=1;
                 stary+=1;}}
         //绘制指示器
         indicator.canvas_indicator(canvas);
@@ -116,6 +116,13 @@ public class ExcelView extends View {
             int p=excelColumnToIndex(indicator.Row_list.get(indicator.Row_list.size()-1));
             int m=Integer.valueOf(indicator.Col_list.get(indicator.Col_list.size()-1));
             Celllist=this.dataControl.get_defult_data(0,m,p);
+            //test
+            logs("-----------------------------","---------------------------------------");
+            for (LinkedList<Cellitem> cellitems:Celllist){
+                for (Cellitem cellitem:cellitems){
+                    logs("数据列表","id:R"+cellitem.idlist[0]+"C"+cellitem.idlist[1]+" text:"+cellitem.text);
+                }}
+            logs("-----------------------------","---------------------------------------");
             first=false;
             invalidate();}
     }
@@ -125,6 +132,7 @@ public class ExcelView extends View {
         float currentY = event.getY();
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                logs("手指按下","ACTION_DOWN");
                 if (!scroller.isFinished()) {
                     scroller.abortAnimation();
                 }
@@ -132,11 +140,24 @@ public class ExcelView extends View {
                 lastTouchY = currentY;
                 break;
             case MotionEvent.ACTION_MOVE:
+                isscroll=true;
+                logs("手指移动","ACTION_MOVE");
                 final float dx = lastTouchX - currentX;
                 final float dy = lastTouchY - currentY;
                 scrollBy(dx, dy);
                 lastTouchX = currentX;
                 lastTouchY = currentY;
+                break;
+            case MotionEvent.ACTION_UP:
+                isscroll=false;
+                logs("手指离开","ACTION_UP");
+                //手指离开时，更新数据
+                if (Celllist!=null && !Celllist.isEmpty()){
+                    //logs("时间戳","nowupdatatime:"+nowupdatatime);
+                    //logs("时间戳","lastupdatatime:"+lastupdatatime);
+                    //logs("时间",nowupdatatime-lastupdatatime);
+                    boolean isok=updata_data();
+                    invalidate();}
                 break;
         }
         return true; // 确保返回 true 以接收后续事件
@@ -151,32 +172,83 @@ public class ExcelView extends View {
         scrollY = Math.max(0, scrollY);
         // 请求重绘
         indicator.scroll_indicator(scrollX,scrollY);
-        if (Celllist!=null && !Celllist.isEmpty()){updata_data();}
-        calculate_xy();//计算两个控件的偏移值
+        calculate_offset_xy();//计算两个控件的偏移值
         invalidate();
+
     }
     //移动更新数据
-    public void updata_data(){
-        int q=excelColumnToIndex(indicator.Row_list.get(0));
-        int z=Integer.valueOf(indicator.Col_list.get(0));
-        int p=excelColumnToIndex(indicator.Row_list.get(indicator.Row_list.size()-1));
-        int m=Integer.valueOf(indicator.Col_list.get(indicator.Col_list.size()-1));
-        int cellq=Celllist.getFirst().getFirst().idlist[1];
-        int cellz=Celllist.getFirst().getFirst().idlist[0];
-        logs("indi-qpzm","q"+q+"p"+p+"z"+z+"m"+m);
-        logs("cell-qpzm","q"+cellq+"z"+cellz);
-        if (q!=cellq|z!=cellz){data_load_lock=true;}//当数据和视图不一致时，调整锁
-        if (data_load_lock){
-            //加载数据
-			
-			
-			
-            data_load_lock =false;
-        }
-    }
+    public boolean updata_data(){
+        //比较视图和数据的边界偏移
+        int cell_left=Celllist.getFirst().getFirst().idlist[1];
+        int cell_right=Celllist.getFirst().getLast().idlist[1];
+        int cell_top=Celllist.getFirst().getFirst().idlist[0];
+        int cell_bottom=Celllist.getLast().getFirst().idlist[0];
+        int view_left=excelColumnToIndex(indicator.Row_list.get(0));
+        int view_right=excelColumnToIndex(indicator.Row_list.get(indicator.Row_list.size()-1));
+        int view_top=Integer.valueOf(indicator.Col_list.get(0));
+        int view_bottom=Integer.valueOf(indicator.Col_list.get(indicator.Col_list.size()-1));
+        logs("cell:"," cell_left:"+cell_left+" cell_right:"+cell_right+" cell_top:"+cell_top+" cell_bottom:"+cell_bottom);
+        logs("view:"," view_left:"+view_left+" view_right:"+view_right+" view_top:"+view_top+" view_bottom:"+view_bottom);
+        //偏移行数
+        int offst_left=cell_left-view_left;
+        int offst_right=view_left-cell_left;
+        int offst_top=cell_top-view_top;
+        int offst_bottom=view_top-cell_top;
+        //左加载
+        if (offst_left > 0) {
+            if(cell_left>1){
+                logs("加载数据","offst_left:"+offst_left);
+                if (offst_left==1){
+                    LinkedList<Cellitem> data=dataControl.get_col_data(sheetindex,cell_left-offst_left,cell_top,cell_bottom);
+                    int d=0;
+                    for (LinkedList<Cellitem> list:Celllist){list.removeLast();list.addFirst(data.get(d));d+=1;}
+                } else if (offst_left>1) {
+                    for (int r=1;r<=offst_left;r++){
+                        LinkedList<Cellitem> data=dataControl.get_col_data(sheetindex,cell_left-r,cell_top,cell_bottom);
+                        int d=0;
+                        for (LinkedList<Cellitem> list:Celllist){list.removeLast();list.addFirst(data.get(d));d+=1;}}}
+            }}
+        //右加载
+        if (offst_right > 0) {
+            logs("加载数据","offst_right:"+offst_right);
+            if (offst_right==1){
+                LinkedList<Cellitem> data=dataControl.get_col_data(sheetindex,cell_right+offst_right,cell_top,cell_bottom);
+                int d=0;
+                for (LinkedList<Cellitem> list:Celllist){list.removeFirst();list.addLast(data.get(d));d+=1;}
+            } else if (offst_right>1) {
+                for (int r=1;r<=offst_right;r++){
+                    LinkedList<Cellitem> data=dataControl.get_col_data(sheetindex,cell_right+r,cell_top,cell_bottom);
+                    int d=0;
+                    for (LinkedList<Cellitem> list:Celllist){list.removeFirst();list.addLast(data.get(d));d+=1;}}}}
+        //更新完左右的数据后，更新变量
+        cell_left=Celllist.getFirst().getFirst().idlist[1];
+        cell_right=Celllist.getFirst().getLast().idlist[1];
+        //上加载
+        if (offst_top > 0) {
+            if (cell_top>1){
+                logs("加载数据","offst_top:"+offst_top);
+                if (offst_top==1){
+                    LinkedList<Cellitem> data=dataControl.get_row_data(sheetindex,cell_top-offst_top,cell_left,cell_right);
+                    Celllist.removeLast();Celllist.addFirst(data);
+                } else if (offst_top>1) {
+                    for (int r=1;r<=offst_top;r++){
+                        LinkedList<Cellitem> data=dataControl.get_row_data(sheetindex,cell_top-r,cell_left,cell_right);
+                        Celllist.removeLast();Celllist.addFirst(data);}}}}
+        //下加载
+        if (offst_bottom > 0) {
+            logs("加载数据","offst_bottom:"+offst_bottom);
+            if (offst_bottom==1){
+                LinkedList<Cellitem> data=dataControl.get_row_data(sheetindex,cell_bottom+offst_bottom,cell_left,cell_right);
+                Celllist.removeFirst();Celllist.addLast(data);
+            } else if (offst_bottom>1) {
+                for (int r=1;r<=offst_bottom;r++){
+                    LinkedList<Cellitem> data=dataControl.get_row_data(sheetindex,cell_bottom+r,cell_left,cell_right);
+                    Celllist.removeFirst();Celllist.addLast(data);}}}
+        return false;
 
+    }
     //计算偏移
-    public void calculate_xy(){
+    public void calculate_offset_xy(){
         this.cell_pianyi_x =roundToTwoDecimals(scrollX/cell_starx)>=1 ? roundToTwoDecimals(scrollX/cell_starx):1;
         this.cell_pianyi_y =roundToTwoDecimals(scrollY/cell_stary)>=1 ? roundToTwoDecimals(scrollY/cell_stary) :1;
     }
@@ -298,7 +370,7 @@ public class ExcelView extends View {
 
         return lines;
     }
-    public static  float calculateXPosition(float xStart, int availableWidth, String line, TextPaint textPaint, ExcelView2.TextAlign textAlign) {
+    public static  float calculateXPosition(float xStart, int availableWidth, String line, TextPaint textPaint,TextAlign textAlign) {
         float lineWidth = textPaint.measureText(line);
         switch (textAlign) {
             case TOP_CENTER:
@@ -313,7 +385,7 @@ public class ExcelView extends View {
                 return xStart;
         }
     }
-    public static  float getTextStartY(float lineHeight, int lineCount, Rect bounds, ExcelView2.TextAlign textAlign, int padding) {
+    public static  float getTextStartY(float lineHeight, int lineCount, Rect bounds,TextAlign textAlign, int padding) {
         float totalTextHeight = lineHeight * lineCount;
         switch (textAlign) {
             case TOP_LEFT:
@@ -413,9 +485,9 @@ public class ExcelView extends View {
         public void set_default_size(int width,int heigt) {
             this.width=width;this.heigt =heigt;}
         //设置绘制区域
-        public void set_screen_size() {
-            this.Row_visible_range=(screen_width/width)+4;
-            this.Col_visible_range=(screen_heigt/heigt)+4;}
+        public void set_screen_size(int wid, int hei) {
+            this.Row_visible_range=wid+4;
+            this.Col_visible_range=hei+4;}
         //滚动
         public void scroll_indicator(float x,float y){
             this.scroll_X_int =roundToTwoDecimals(x/width)>=1 ? roundToTwoDecimals(x/width) :1;
@@ -436,8 +508,8 @@ public class ExcelView extends View {
             Col_list=generateVerticalIndicators((int)this.scroll_Y_int,(int)(this.scroll_Y_int +this.Col_visible_range));
             //logs("nub_row",(this.scroll_X_int +this.Row_visible_range));
             //logs("nub_col",(this.scroll_Y_int +this.Col_visible_range));
-            //logs("Col_list",Col_list.toString());
-            //logs("Row_list",Row_list.toString());
+            logs("Col_list",Col_list.toString());
+            logs("Row_list",Row_list.toString());
             //绘制背景
             Rect row_rect=new Rect(width,0,screen_width,heigt);
             Rect col_rect=new Rect(0,heigt,width,screen_heigt);
